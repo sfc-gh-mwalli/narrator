@@ -1,0 +1,60 @@
+# --- Build output and dependencies -----------------------------------------
+node_modules/
+.next/
+out/
+output/
+*.tsbuildinfo
+
+# --- Secrets and local configuration ---------------------------------------
+# .env* rather than .env.local alone: a stray .env or .env.production carries
+# the same credentials and was not covered before.
+.env
+.env.*
+!.env.example
+
+# TLS CA bundle extracted from the local trust store for the image build only.
+# Machine and network specific — do not commit. A fresh clone must regenerate it
+# before building the worker image; see README.
+worker/snowflake-ca.crt
+
+# --- Logs and OS noise ------------------------------------------------------
+*.log
+.DS_Store
+
+# --- Python (the GPU worker) ------------------------------------------------
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
+venv/
+.venv/
+
+# --- Vendored upstream reference, 1.3 GB ------------------------------------
+# NOT a build input. worker/Dockerfile clones petermg/Chatterbox-TTS-Extended
+# itself at a pinned commit and downloads the model weights during the build,
+# so the image is reproducible without this directory — which is also why
+# snowflake.yml already excludes it from deploy artifacts. It holds a local
+# copy used to verify patch anchors, plus voice reference clips.
+spike/
+
+# --- Generated and enrolled audio -------------------------------------------
+# Never commit audio. Two distinct reasons:
+#   1. Voice enrollment clips are biometric data. A speaker's reference clip is
+#      the one artefact that makes the cloned voice reproducible by anyone who
+#      has it, so it does not belong in source control even a private repo.
+#   2. Generated narration is app OUTPUT, derived and re-creatable, and large.
+# The app stores both in Snowflake stages (@ENROLLMENT_AUDIO, @NARRATION_AUDIO,
+# @CHUNK_AUDIO); these patterns catch anything that lands on disk locally.
+*.wav
+*.mp3
+*.aiff
+*.aif
+*.flac
+*.m4a
+*.ogg
+*.opus
+*.webm
+
+# --- Agent session working notes --------------------------------------------
+# Planning documents from Cortex Code sessions. Useful locally, not project code.
+.cortex/

@@ -1,0 +1,32 @@
+install:
+  commands:
+    - ["npm", "ci", "--include=dev"]
+
+build:
+  commands:
+    - ["npm", "run", "build"]
+    # For standalone mode
+    - ["cp", "-r", ".next/static", ".next/standalone/.next/static"]
+    - ["cp", "-r", "public", ".next/standalone/public"]
+    # Avoid packaging extra node_modules since standalone includes its own
+    - ["rm", "-rf", "node_modules"]
+
+run:
+  command: ["node", ".next/standalone/server.js"]
+
+# This is the build-only manifest (no top-level `version:` key), paired with
+# snowflake.yml which says where the app is deployed. Display metadata therefore
+# lives under `profile:` here — in an `app.yml` with `version: 2` these would be
+# top-level keys instead, and putting them in the wrong place fails silently.
+profile:
+  label: "Narrator"
+  description: "Clone a speaker's voice from a short recording, then generate narration audio from a script."
+  icon: "public/icon.svg"
+
+# No secrets and no runtime external access: service A talks only to Snowflake.
+# It reaches the GPU worker by inserting a row in NARRATOR.APP.JOBS, never over
+# the network, so no external_access_integrations are needed at runtime.
+#
+# NOTE: build-time egress is a separate matter — `npm ci` above must reach the
+# npm registry, which needs a build EAI configured via `snow app setup
+# --build-eai` or the `build_eai` key.

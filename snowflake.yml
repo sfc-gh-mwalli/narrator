@@ -1,0 +1,54 @@
+definition_version: "2"
+
+entities:
+  narrator:
+    type: snowflake-app
+    identifier:
+      name: NARRATOR
+      # Deployed alongside its own data rather than into the personal database
+      # USER$<your_user>.PUBLIC (which `snow app setup` resolves to by
+      # default). Keeping the app and its tables/stages in one database is
+      # simpler to reason about, and personal
+      # databases carry extra constraints — notably no stage support, and
+      # renaming into or out of them is blocked.
+      database: NARRATOR
+      schema: APP
+    artifacts:
+      - src: ./*
+        dest: ./
+        ignore:
+          # Template defaults
+          - node_modules
+          - .env*
+          - __pycache__
+          - "*.pyc"
+          - .next
+          - .git
+          - snowflake.log
+          # Narrator additions — these are NOT part of service A and must never
+          # be uploaded. spike/ in particular holds a Python venv plus several
+          # GB of downloaded model weights.
+          - spike
+          - worker
+          - sql
+          - .cortex
+          - "*.md"
+          - app.yml.build-template
+
+    # An existing general-purpose warehouse, not a dedicated one. The app's own
+    # queries are metadata and small DML — listing narrations, inserting jobs — so
+    # a dedicated warehouse would add an object to grant and monitor, and its own
+    # idle billing window, in exchange for nothing.
+    query_warehouse: GENERAL_USE_WH
+    # Build-time egress ONLY, for `npm ci` in app.yml's install phase. Without it
+    # the build fails at dependency download. Scoped to registry.npmjs.org:443
+    # because nothing in package.json fetches binaries from other hosts.
+    #
+    # There is deliberately no service_eai: at runtime service A talks only to
+    # Snowflake, reaching the GPU worker by inserting a row into
+    # NARRATOR.APP.JOBS rather than over the network.
+    build_eai:
+      name: NARRATOR_NPM_BUILD_EAI
+    # code_stage / code_workspace deliberately omitted: the CLI then picks a
+    # backend at deploy time based on the destination and the role's privileges.
+    # Hard-coding one is the usual cause of stage failures.

@@ -1,0 +1,39 @@
+# Chatterbox-TTS-Extended requirements, with two corrections.
+#
+# Corrections vs upstream requirements.txt (commit 7b43fc0):
+#
+# 1. auto-editor was pinned to ==27.1.1, which NO LONGER EXISTS ON PYPI — every
+#    27.x release has been removed; the latest is 29.x. Extended is therefore
+#    not installable as shipped. auto-editor is invoked as a CLI subprocess
+#    (`--edit audio:threshold=X --margin Ys --export audio`) inside a
+#    try/except that only prints on failure, and it defaults to OFF, so a newer
+#    version degrades gracefully if its flags ever drift.
+#
+# 2. The `--extra-index-url` for cu128 is passed on the pip command line in the
+#    Dockerfile rather than embedded here, so this file stays platform-neutral.
+#
+# Everything else is upstream's pin, unchanged. Note transformers==4.46.3 (not
+# 5.x), and that silero-vad and resemble-perth are ordinary pinned PyPI
+# packages — neither reaches the network at runtime.
+
+gradio
+numpy
+faster-whisper
+openai-whisper
+ffmpeg-python
+auto-editor>=29,<30
+resampy==0.4.3
+librosa==0.10.0
+s3tokenizer
+spaces
+transformers==4.46.3
+diffusers==0.29.0
+omegaconf==2.3.0
+resemble-perth==1.0.1
+silero-vad==5.1.2
+conformer==0.3.2
+pyrnnoise==0.3.8
+soundfile
+nltk
+torch==2.7.0
+torchaudio==2.7.0

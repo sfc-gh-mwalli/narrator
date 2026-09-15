@@ -1,0 +1,109 @@
+# Third-party notices
+
+Narrator itself is MIT licensed (see `LICENSE`). It builds on third-party work,
+listed here with the obligations that come with each.
+
+Nothing in this repository ships third-party binaries or model weights. The
+worker image pulls them from PyPI, GitHub and HuggingFace at **build** time, so
+what you clone is only the code in this repository plus the build recipe.
+
+
+## Verbatim source included in this repository
+
+`worker/patch_extended.py` applies a set of source edits to
+[Chatterbox-TTS-Extended](https://github.com/petermg/Chatterbox-TTS-Extended).
+To locate the code it edits, it carries roughly 119 lines of that project's
+source verbatim as match strings. That is redistribution, so its notice is
+reproduced in full:
+
+```
+MIT License
+
+Copyright (c) 2025 Resemble AI
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+```
+
+
+## Speech model and weights
+
+| Component | Licence |
+|---|---|
+| Chatterbox-TTS-Extended (cloned at build, pinned commit) | MIT, © 2025 Resemble AI |
+| `chatterbox-tts` | MIT |
+| `ResembleAI/chatterbox` model weights (HuggingFace, ungated) | MIT |
+
+The voice encoder, T3 token model and S3Gen vocoder weights are the public
+ResembleAI checkpoints. No fine-tuning, no adapter weights and no gated or
+paid model is involved, so no additional model licence applies.
+
+
+## Runtime dependencies
+
+Licences below were read from each project's `LICENSE` file or its published
+package metadata rather than assumed.
+
+| Component | Licence |
+|---|---|
+| `auto-editor` | The Unlicense (public domain) |
+| `faster-whisper`, `openai-whisper` | MIT |
+| `silero-vad`, `conformer`, `resemble-perth` | MIT |
+| `transformers`, `diffusers`, `gradio`, `nltk`, `spaces`, `s3tokenizer` | Apache-2.0 |
+| `librosa`, `resampy` | ISC |
+| `torch`, `torchaudio`, `numpy`, `soundfile`, `omegaconf` | BSD |
+| `snowflake-connector-python` | Apache-2.0 |
+
+Two entries need more than a table row:
+
+- **`soxr` is LGPL-2.1-or-later.** It arrives transitively through `librosa`
+  and `resampy` and is the only copyleft component in the stack. The LGPL is
+  written so that linking does not impose its terms on the linking work, so it
+  does not affect the MIT licence on this repository, and simply using it
+  imposes nothing. It does carry obligations on anyone who **redistributes the
+  built worker image**, which then contains the library: supply that library's
+  source or a written offer for it, and permit relinking. Building the image
+  for your own account is unaffected.
+
+- **`pyrnnoise` declares no licence** in its package metadata. It wraps Xiph's
+  RNNoise, which is BSD-3-Clause. It is an upstream Chatterbox-TTS-Extended pin
+  and is used only for optional denoising. Treat its status as unresolved and
+  remove the pin if that matters to you.
+
+
+## Build environment
+
+- **`ffmpeg`** is installed as an Ubuntu system package. Distribution builds of
+  ffmpeg are typically GPL-licensed. It is invoked as a separate command-line
+  process and is not linked into this code, so its terms do not reach this
+  project. The same redistribution caution as `soxr` applies to the image.
+- **`nvidia/cuda:12.8.1-cudnn-runtime-ubuntu22.04`** is the base image and is
+  governed by NVIDIA's own deep learning container licence terms, which you
+  accept by building or running it.
+- Node dependencies (Next.js, React, Radix UI, TanStack Query, Tailwind) are
+  MIT, except where their own metadata says otherwise. See `package-lock.json`
+  for the resolved set.
+
+
+## Generated audio is not watermarked
+
+Chatterbox can apply Resemble AI's Perth audio watermark to its output.
+`worker/adapter.py` passes `disable_watermark=True`, so audio produced by this
+project carries no watermark and is not detectable as synthetic by that means.
+This is stated so the behaviour is not a surprise. See "Responsible use" in
+`README.md`.

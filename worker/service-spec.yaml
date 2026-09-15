@@ -1,0 +1,85 @@
+spec:
+  containers:
+    - name: worker
+      image: /NARRATOR/IMAGES/REPO/narrator-worker:v22
+      command: ["python", "worker.py"]
+      env:
+        WORKER_ID: narrator
+        NARRATOR_DATABASE: NARRATOR
+        NARRATOR_SCHEMA: APP
+        POLL_SECONDS: "5"
+        HEARTBEAT_SECONDS: "10"
+        # Where Chatter lives. The adapter already defaults to this path, but it
+        # is stated because the import only resolves if it is right, and a wrong
+        # value fails at container start rather than anywhere obvious.
+        EXTENDED_DIR: /opt/extended
+        # Requeue a job whose worker stopped heartbeating. A native crash in the
+        # inference stack cannot be caught in-process, so recovery has to come
+        # from a sweep; the margin over HEARTBEAT_SECONDS keeps a worker that is
+        # merely busy in a long generation from being declared dead.
+        ORPHAN_AFTER_SECONDS: "120"
+        REAP_EVERY_SECONDS: "60"
+        MOUNT_ENROLLMENT: /mnt/enrollment
+        MOUNT_VOICES: /mnt/voices
+        MOUNT_NARRATIONS: /mnt/narrations
+      resources:
+        # BOTH requests and limits must set nvidia.com/gpu, and to the same
+        # integer. Omitting either silently yields a container with no GPU
+        # access at all — the model then loads on CPU and generation crawls.
+        requests:
+          nvidia.com/gpu: 1
+          memory: 18Gi
+          cpu: 4
+        limits:
+          nvidia.com/gpu: 1
+          # GPU_NV_S provides 6 vCPU / 28 GiB. Leaving headroom below 28 because
+          # each mounted stage costs ~512 MiB, and three are mounted here.
+          memory: 24Gi
+          cpu: 6
+      volumeMounts:
+        - name: enrollment-audio
+          mountPath: /mnt/enrollment
+        - name: voice-profiles
+          mountPath: /mnt/voices
+        - name: narration-audio
+          mountPath: /mnt/narrations
+
+  # Publish platform metrics to the account event table (snowflake.telemetry.events).
+  #
+  # The `system` group carries container.gpu.utilization and
+  # container.gpu.memory.usage; `system_limits` carries container.gpu.limit and
+  # container.gpu.memory.capacity. Together those answer the question we could not
+  # answer by inspection: whether one worker actually saturates the A10G. That
+  # decides whether more throughput should come from batching (free — Chatterbox
+  # has a vectorized sampler Extended does not use) or from a second GPU node
+  # (2x cost for 2x capacity).
+  #
+  # Metrics share a 1 MB/s per-node ingest budget with logs, so only these two
+  # groups are enabled rather than network and storage as well.
+  platformMonitor:
+    metricConfig:
+      groups:
+        - system
+        - system_limits
+
+  volumes:
+    # Stage volumes: the worker reads and writes these as ordinary files. Note
+    # random writes and appends are NOT supported — write sequentially, then
+    # close, which is what the worker does.
+    - name: enrollment-audio
+      source: stage
+      stageConfig:
+        name: "@NARRATOR.APP.ENROLLMENT_AUDIO"
+    - name: voice-profiles
+      source: stage
+      stageConfig:
+        name: "@NARRATOR.APP.VOICE_PROFILES"
+    - name: narration-audio
+      source: stage
+      stageConfig:
+        name: "@NARRATOR.APP.NARRATION_AUDIO"
+
+# Deliberately NO endpoints block. Service B exposes no HTTP surface: service A
+# reaches it only by inserting a row into NARRATOR.APP.JOBS, and B reports
+# liveness by writing NARRATOR.APP.WORKER_STATUS. That is why no external access
+# integration, ingress endpoint, or service role is needed anywhere here.
