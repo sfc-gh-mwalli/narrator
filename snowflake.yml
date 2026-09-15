@@ -34,6 +34,9 @@ entities:
           - .cortex
           - "*.md"
           - app.yml.build-template
+          # README screenshots. Documentation only — the app does not serve them,
+          # so uploading them would just inflate every deploy.
+          - docs
 
     # An existing general-purpose warehouse, not a dedicated one. The app's own
     # queries are metadata and small DML — listing narrations, inserting jobs — so

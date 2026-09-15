@@ -15,6 +15,32 @@ network — it inserts a row into `NARRATOR.APP.JOBS` and the worker polls for i
 
 ---
 
+## What it looks like
+
+**Enrolling a voice.** Creating a speaker records a consent attestation first —
+cloning a voice without one is not supported. You then read one passage straight
+through. Chatterbox takes the voice mostly from the opening seconds, so the
+guidance below the prompt is about opening strongly rather than reading for
+length.
+
+![Enrolling a voice — consent attestation, prompt selection and level check](docs/images/enroll-voice.png)
+
+**Generating narration.** The script accepts `[pause:1s]` tags, which become true
+digital silence inserted at assembly rather than silence asked of the model. Takes
+per chunk is the main quality control: each chunk is generated N times and Whisper
+keeps the best, which matters because a narration is only as good as its worst
+chunk.
+
+![Generating narration — script with pause tags, voice tuning and quality settings](docs/images/generate-narration.png)
+
+**Running the GPU worker.** The worker is suspended by default and costs nothing
+while idle. Work submitted against a suspended worker queues rather than failing,
+so you can write scripts first and pay for GPU time later.
+
+![GPU worker card — pool state, worker count, warehouse and queued jobs](docs/images/gpu-worker.png)
+
+---
+
 ## How voice cloning works here
 
 This section explains how the generated audio comes to resemble a particular
